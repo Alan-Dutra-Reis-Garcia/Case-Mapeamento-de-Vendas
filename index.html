@@ -4,21 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Análise Geográfica de Vendas e Oportunidades — Cartões de Benefícios</title>
-<meta name="description" content="Portfólio interativo com análise nacional de vendas e oportunidades para cartões de benefícios, incluindo mapa-múndi estilo Power BI com UFs do Brasil." />
-
-<!-- Leaflet (CDN) -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9q7k="
-  crossorigin=""
-/>
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-o9N1j7kGStbVQ5ZkS7CcHkGKuX3sI5Gucs5mOH8Z5wY="
-  crossorigin=""
-></script>
-
+<meta name="description" content="Portfólio interativo com análise nacional de vendas e oportunidades para cartões de benefícios, incluindo mapa-múndi estilizado e visualizações." />
 <style>
   :root{
     --bg:#0b1220;
@@ -27,6 +13,8 @@
     --text:#e6edf6;
     --brand:#0ea5e9;        /* azul */
     --brand-2:#10b981;      /* verde */
+    --accent:#1f2937;       /* cinza escuro */
+    --card:#0b1324;
     --stroke:#1e293b;
   }
   *{box-sizing:border-box}
@@ -43,7 +31,6 @@
   }
   a{color:var(--brand); text-decoration:none}
   .container{max-width:1200px; margin-inline:auto; padding:24px}
-
   /* NAV */
   .nav{
     position:sticky; top:0; z-index:50;
@@ -52,7 +39,9 @@
     border-bottom:1px solid #0f203a;
   }
   .nav .inner{display:flex; align-items:center; justify-content:space-between; gap:16px}
-  .brand{display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px}
+  .brand{
+    display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px
+  }
   .brand .dot{
     width:12px; height:12px; border-radius:50%;
     background: radial-gradient(circle at 30% 30%, #67e8f9, #0ea5e9 70%);
@@ -64,7 +53,6 @@
     border:1px solid transparent; transition:.2s ease; opacity:.9
   }
   .nav a.link:hover{border-color:#113455; background:#0c1b32}
-
   /* HERO */
   .hero{padding:64px 24px 12px}
   .badge{
@@ -89,35 +77,39 @@
   .kpi .label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px}
   .kpi .value{font-size:26px; font-weight:800}
   .kpi .delta{font-size:12px; font-weight:700}
-
-  /* Sections */
+  /* SECTIONS */
   section{scroll-margin-top:82px; padding:48px 0}
-  .section-title{font-size:clamp(20px,2.4vw,28px); margin:0 0 12px}
+  .section-title{font-size:clamp(20px,2.4vw,28px); margin:0 0 12px; letter-spacing:.2px}
   .section-sub{color:var(--muted); margin:0 0 24px}
   .panel{
     background:linear-gradient(180deg,#0c1627,#0b1526);
     border:1px solid #13304f; border-radius:18px; padding:18px;
   }
-
-  /* MAP (Leaflet) */
+  /* MAP (World + Brazil Regions) */
   .map-wrap{display:grid; grid-template-columns: 1.25fr .75fr; gap:18px}
-  #map{
-    width:100%; height:520px; border-radius:14px; overflow:hidden;
-    outline:1px solid #153658;
-    box-shadow: inset 0 0 0 1px rgba(21,54,88,.35);
-  }
-  .legend{
-    display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap
-  }
+  .svg-card{position:relative; aspect-ratio: 16/9; border-radius:14px; overflow:hidden; border:1px solid #153658}
+  .svg-card svg{width:100%; height:100%; display:block; background:radial-gradient(600px 300px at 70% -10%, rgba(14,165,233,.08), transparent 60%), #08101e}
+  .graticule line{stroke:#0f2744; stroke-width:1; opacity:.25}
+  .continent{fill:#0b1a2f; stroke:#112a47; stroke-width:2}
+  .region{stroke:#0f2744; stroke-width:2.5; cursor:pointer; transition: filter .2s ease}
+  .region:hover{filter:brightness(1.15)}
+  .map-label{font-size:14px; fill:#cfe7ff; opacity:.85; pointer-events:none}
+  .legend{display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap}
   .legend .bar{
     width:220px; height:12px; border-radius:999px; border:1px solid #163a5f;
     background: linear-gradient(90deg, #bfe5ff, #0ea5e9);
   }
   .legend small{color:#9cc9ff}
+  .tooltip{
+    position:absolute; pointer-events:none; z-index:20;
+    background:#061126; border:1px solid #143153; color:#d8eeff; font-size:13px;
+    padding:10px 12px; border-radius:12px; min-width:220px; box-shadow:0 12px 30px rgba(0,0,0,.35);
+    transform:translate(-50%, -110%); opacity:0; transition:opacity .15s ease;
+  }
+  .tooltip.show{opacity:1}
   .side{display:flex; flex-direction:column; gap:10px}
   .side .item{display:flex; justify-content:space-between; gap:12px; border-bottom:1px dashed #163a5f; padding:8px 0}
   .pill{font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #1b3657; color:#a0e6ff; background:#0b1a33;}
-
   /* DONUT + INSIGHTS */
   .mix-grid{display:grid; grid-template-columns: 1fr 1fr; gap:18px}
   .donut-card{display:grid; place-items:center; padding:20px}
@@ -130,8 +122,7 @@
   .lg .dot{width:10px; height:10px; border-radius:50%}
   .insights ul{margin:8px 0 0 18px}
   .insights li{margin:6px 0}
-
-  /* CARDS */
+  /* OPPORTUNITIES */
   .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
   .card{
     background:linear-gradient(180deg,#0b1527,#0a1424);
@@ -141,23 +132,19 @@
   .card:hover{transform:translateY(-4px); box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .card h4{margin:0 0 6px; font-size:18px}
   .card p{margin:0; color:#cfe3fa}
-
   /* TOOLS */
   .tools{display:flex; gap:10px; flex-wrap:wrap}
   .tool{padding:8px 10px; border:1px solid #153659; background:#0b182e; border-radius:10px; font-weight:700; font-size:13px}
-
   /* FOOTER */
   footer{padding:26px 24px 48px; color:#a9c8f3}
-
-  /* Responsive */
+  /* RESPONSIVE */
   @media (max-width: 980px){
     .map-wrap{grid-template-columns:1fr}
     .mix-grid{grid-template-columns:1fr}
     .cards{grid-template-columns:1fr}
     .kpis{grid-template-columns:1fr; gap:10px}
   }
-
-  /* Fade-in */
+  /* FADE-IN on scroll */
   .reveal{opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease}
   .reveal.visible{opacity:1; transform:translateY(0)}
 </style>
@@ -170,7 +157,7 @@
       <nav aria-label="Navegação principal">
         <ul>
           <li><a class="link" href="#resumo">Resumo</a></li>
-          <li><a class="link" href="#mapa">Vendas por UF</a></li>
+          <li><a class="link" href="#mapa">Vendas por Região</a></li>
           <li><a class="link" href="#mix">Mix de Clientes</a></li>
           <li><a class="link" href="#oportunidades">Oportunidades</a></li>
           <li><a class="link" href="#tecnologias">Tecnologias</a></li>
@@ -180,18 +167,20 @@
     </div>
   </header>
 
-  <!-- HERO -->
+  <!-- HERO / RESUMO EXECUTIVO -->
   <section id="resumo" class="hero container">
     <span class="badge">Estudo de Caso • Cobertura Nacional</span>
     <h1>Análise Geográfica de Vendas e Oportunidades de Mercado</h1>
     <p class="subtitle">Um Estudo de Caso para Cartões de Benefícios</p>
     <div class="panel reveal">
       <p style="margin:0">
-        <strong>Resumo Executivo:</strong> Atuação nacional com variação relevante entre UFs. Usamos um
-        <em>mapa-múndi com basemap satélite</em> e polígonos oficiais do IBGE para visualizar intensidade de vendas,
-        identificar lacunas e priorizar campanhas regionais e ofertas multi-produto.
+        <strong>Resumo Executivo:</strong> as vendas no Brasil apresentam assimetria entre regiões. Usamos um
+        <em>mapa-múndi estilizado</em> (à la Power BI) com foco no Brasil — realçando as cinco regiões — para orientar decisões
+        comerciais nacionais. O impacto esperado é a <em>priorização de campanhas por região</em>, <em>upsell</em> por perfil e
+        aumento de <em>ticket médio</em> via ofertas direcionadas.
       </p>
     </div>
+
     <div class="kpis">
       <div class="kpi reveal">
         <span class="label">Receita no Trimestre</span>
@@ -199,7 +188,7 @@
         <span class="delta" id="kpi-growth">—</span>
       </div>
       <div class="kpi reveal">
-        <span class="label">UFs Monitoradas</span>
+        <span class="label">Regiões Monitoradas</span>
         <span class="value" id="kpi-states">—</span>
         <span class="delta pill">Atuação: Brasil</span>
       </div>
@@ -211,39 +200,120 @@
     </div>
   </section>
 
-  <!-- MAPA (Leaflet + IBGE) -->
+  <!-- SEÇÃO 1: MAPA (Múndi com Brasil por Regiões) -->
   <section id="mapa" class="container">
-    <h2 class="section-title">Vendas por UF (Mapa Interativo — Mapa-Múndi)</h2>
-    <p class="section-sub">Basemap satélite (Esri) com polígonos oficiais IBGE. Passe o mouse para ver detalhes.</p>
+    <h2 class="section-title">Vendas por Região (Mapa Interativo — Mapa-Múndi)</h2>
+    <p class="section-sub">Brasil destacado por <strong>regiões</strong> com dados hipotéticos. Passe o mouse para ver detalhes.</p>
 
     <div class="map-wrap">
-      <div class="panel reveal" style="padding:0">
-        <div id="map" aria-label="Mapa-múndi com UFs do Brasil"></div>
+      <div class="svg-card panel reveal" id="map-card" aria-label="Mapa-múndi com Brasil por regiões">
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip" role="dialog" aria-hidden="true"></div>
+
+        <!-- Mapa-múndi estilizado + Brasil segmentado -->
+        <svg viewBox="0 0 1000 520" aria-labelledby="mapTitle mapDesc" role="img">
+          <title id="mapTitle">Mapa-múndi estilizado com Brasil em foco</title>
+          <desc id="mapDesc">Continentes para contexto e Brasil dividido em 5 regiões com cores por volume de vendas.</desc>
+
+          <!-- Graticule (linhas de latitude/longitude para "vibe" Power BI) -->
+          <g class="graticule" opacity=".45">
+            <!-- lat -->
+            <line x1="0" y1="60" x2="1000" y2="60"/>
+            <line x1="0" y1="140" x2="1000" y2="140"/>
+            <line x1="0" y1="220" x2="1000" y2="220"/>
+            <line x1="0" y1="300" x2="1000" y2="300"/>
+            <line x1="0" y1="380" x2="1000" y2="380"/>
+            <line x1="0" y1="460" x2="1000" y2="460"/>
+            <!-- lon -->
+            <line x1="120" y1="0" x2="120" y2="520"/>
+            <line x1="240" y1="0" x2="240" y2="520"/>
+            <line x1="360" y1="0" x2="360" y2="520"/>
+            <line x1="480" y1="0" x2="480" y2="520"/>
+            <line x1="600" y1="0" x2="600" y2="520"/>
+            <line x1="720" y1="0" x2="720" y2="520"/>
+            <line x1="840" y1="0" x2="840" y2="520"/>
+          </g>
+
+          <!-- Continentes (formas simplificadas para contexto visual) -->
+          <g aria-hidden="true">
+            <!-- América do Norte -->
+            <polygon class="continent" points="70,120 220,80 360,100 420,150 360,210 280,200 220,240 160,210 120,240 80,220"/>
+            <!-- América do Sul -->
+            <polygon class="continent" points="320,260 360,260 400,300 380,360 360,420 320,480 300,420 280,360 300,320"/>
+            <!-- Europa -->
+            <polygon class="continent" points="520,110 560,90 600,100 620,120 600,140 560,130"/>
+            <!-- África -->
+            <polygon class="continent" points="560,160 600,180 640,260 620,340 560,320 520,260"/>
+            <!-- Ásia -->
+            <polygon class="continent" points="640,110 720,90 840,120 900,160 880,220 820,200 780,220 720,180 680,180 650,150"/>
+            <!-- Oceania -->
+            <polygon class="continent" points="820,360 880,380 900,420 860,440 820,420"/>
+          </g>
+
+          <!-- Brasil (aprox. dentro da América do Sul) -->
+          <!-- contorno do Brasil para destaque -->
+          <polygon fill="none" stroke="#1a6bb3" stroke-width="3"
+                   points="330,280 360,280 380,300 372,328 362,354 346,368 330,352 332,320" />
+
+          <!-- Regiões do Brasil: Norte, Nordeste, Centro-Oeste, Sudeste, Sul -->
+          <g id="br-regions">
+            <!-- Norte -->
+            <polygon id="N" class="region"
+                     points="330,280 360,280 360,300 342,310 330,300"
+                     tabindex="0" aria-label="Região Norte"></polygon>
+
+            <!-- Nordeste -->
+            <polygon id="NE" class="region"
+                     points="360,280 382,300 372,318 360,300"
+                     tabindex="0" aria-label="Região Nordeste"></polygon>
+
+            <!-- Centro-Oeste -->
+            <polygon id="CO" class="region"
+                     points="342,310 360,300 360,330 346,340 332,330"
+                     tabindex="0" aria-label="Região Centro-Oeste"></polygon>
+
+            <!-- Sudeste -->
+            <polygon id="SE" class="region"
+                     points="360,330 372,330 362,354 346,347"
+                     tabindex="0" aria-label="Região Sudeste"></polygon>
+
+            <!-- Sul -->
+            <polygon id="S" class="region"
+                     points="346,347 362,354 344,368 336,360"
+                     tabindex="0" aria-label="Região Sul"></polygon>
+          </g>
+
+          <!-- Rótulo BR -->
+          <text class="map-label" x="350" y="310">BR</text>
+        </svg>
       </div>
+
       <aside class="panel reveal">
         <div class="legend">
-          <span class="pill">Legenda: Vendas (R$ mi)</span>
+          <span class="pill">Legenda: Vendas (R$ mi) — Brasil</span>
           <div class="bar" id="legend-bar"></div>
           <small><span id="min-label">mín</span> → <span id="max-label">máx</span></small>
         </div>
         <div class="side" id="side-list" aria-live="polite"></div>
         <p style="color:#9cc9ff; margin-top:8px; font-size:13px">
-          Dica: priorize <strong>SP</strong>, <strong>MG</strong> e <strong>RJ</strong> para <em>upsell</em>; acelere aquisição em
-          <strong>NE</strong> (BA/PE/CE) e <strong>CO</strong> (GO/DF).
+          Dica: manter <strong>Sudeste</strong> para <em>upsell</em> e reforçar <strong>Nordeste</strong> e <strong>Centro-Oeste</strong> com campanhas de aquisição.
         </p>
       </aside>
     </div>
   </section>
 
-  <!-- MIX -->
+  <!-- SEÇÃO 2: MIX DE CLIENTES -->
   <section id="mix" class="container">
     <h2 class="section-title">Análise de Mix de Clientes</h2>
     <p class="section-sub">Distribuição da base por segmento e implicações de receita.</p>
+
     <div class="mix-grid">
       <div class="panel donut-card reveal">
         <div class="donut-wrap" aria-label="Gráfico de donut — mix de clientes" role="img">
           <svg viewBox="0 0 120 120">
+            <!-- trilha -->
             <circle cx="60" cy="60" r="44" fill="none" stroke="#0c2543" stroke-width="16"></circle>
+            <!-- segmentos -->
             <circle id="seg-peq" cx="60" cy="60" r="44" fill="none" stroke="#0ea5e9" stroke-width="16"
                     stroke-dasharray="0 276.46" transform="rotate(-90 60 60)"></circle>
             <circle id="seg-med" cx="60" cy="60" r="44" fill="none" stroke="#10b981" stroke-width="16"
@@ -277,27 +347,28 @@
     </div>
   </section>
 
-  <!-- OPORTUNIDADES -->
+  <!-- SEÇÃO 3: OPORTUNIDADES -->
   <section id="oportunidades" class="container">
     <h2 class="section-title">Oportunidades de Mercado (Próximas Ações)</h2>
     <p class="section-sub">Cards táticos priorizados para o próximo trimestre.</p>
     <div class="cards">
       <article class="card reveal">
         <h4>1) Expansão Geográfica</h4>
-        <p>NE (BA/PE/CE) com densidade crescente de PMEs. Parcerias regionais e onboarding assistido para acelerar adesão.</p>
+        <p>Nordeste com densidade crescente de PMEs formais. Parcerias com contabilidades locais e <em>onboarding</em> assistido.</p>
       </article>
       <article class="card reveal">
         <h4>2) Venda Cruzada</h4>
-        <p>Clientes de <strong>Refeição</strong> em centros urbanos com propensão ao cartão de <strong>Combustível</strong>. Combo com gestão de frotas.</p>
+        <p>Clientes de <strong>Refeição</strong> em centros urbanos têm propensão ao cartão de <strong>Combustível</strong>.
+          Combo com gestão de frotas e cashback por quilometragem.</p>
       </article>
       <article class="card reveal">
         <h4>3) Ofertas Personalizadas</h4>
-        <p>Campanhas com incentivo progressivo e materiais educacionais para RH/colaborador elevarem uso dos benefícios.</p>
+        <p>Segmentos com baixo uso do benefício recebem campanhas com incentivo progressivo e materiais de educação para RH e colaboradores.</p>
       </article>
     </div>
   </section>
 
-  <!-- TECNOLOGIAS -->
+  <!-- SEÇÃO 4: TECNOLOGIAS -->
   <section id="tecnologias" class="container">
     <h2 class="section-title">Tecnologias e Ferramentas</h2>
     <p class="section-sub">Stack hipotético utilizado na exploração, modelagem e visualização.</p>
@@ -308,85 +379,69 @@
       <span class="tool">Power BI</span>
       <span class="tool">QGIS</span>
       <span class="tool">JavaScript</span>
-      <span class="tool">Leaflet</span>
+      <span class="tool">SVG</span>
       <span class="tool">HTML &amp; CSS</span>
     </div>
   </section>
 
-  <!-- CONCLUSÃO -->
+  <!-- SEÇÃO 5: CONCLUSÃO -->
   <section id="conclusao" class="container">
     <h2 class="section-title">Conclusão</h2>
     <div class="panel reveal">
       <p style="margin:0">
-        A visão nacional por UF evidencia concentração natural no Sudeste e bolsões de crescimento no Nordeste e Centro-Oeste.
+        A leitura nacional mostra concentração natural no Sudeste e bolsões de crescimento no Nordeste e Centro-Oeste.
         Combinando campanhas regionais, bundles para PMEs e ofertas personalizadas, projetamos avanço orgânico com melhora do ticket
-        e da penetração multi-produto. Próximos passos: (1) pilotos AB-test por UF, (2) metas diferenciadas por segmento,
-        (3) painel integrado ao CRM/BI para acompanhamento semanal.
+        e penetração multi-produto. Próximos passos: (1) pilotos AB-test por região, (2) metas diferenciadas por segmento,
+        (3) este painel integrado ao CRM/BI para acompanhamento semanal.
       </p>
     </div>
   </section>
 
   <footer class="container">
-    <small>© 2025 — Estudo de Portfólio. Dashboard simulado com dados fictícios. Fonte geográfica: IBGE (malhas GeoJSON).</small>
+    <small>© 2025 — Estudo de Portfólio. Dashboard simulado com dados fictícios.</small>
   </footer>
 
 <script>
 /* =========================
-   Dados Hipotéticos por UF
+   Dados Hipotéticos (Nacional)
    ========================= */
-const salesByUF = {
-  AC:{nome:"Acre",vendas:20,crescimento:5.8,clientes:1200},
-  AL:{nome:"Alagoas",vendas:50,crescimento:6.1,clientes:3100},
-  AP:{nome:"Amapá",vendas:18,crescimento:5.2,clientes:1100},
-  AM:{nome:"Amazonas",vendas:60,crescimento:5.9,clientes:4200},
-  BA:{nome:"Bahia",vendas:130,crescimento:7.2,clientes:10000},
-  CE:{nome:"Ceará",vendas:95,crescimento:6.8,clientes:7600},
-  DF:{nome:"Distrito Federal",vendas:90,crescimento:7.1,clientes:5200},
-  ES:{nome:"Espírito Santo",vendas:70,crescimento:7.3,clientes:5600},
-  GO:{nome:"Goiás",vendas:110,crescimento:6.7,clientes:8000},
-  MA:{nome:"Maranhão",vendas:65,crescimento:6.0,clientes:5200},
-  MT:{nome:"Mato Grosso",vendas:100,crescimento:6.6,clientes:5900},
-  MS:{nome:"Mato Grosso do Sul",vendas:95,crescimento:6.4,clientes:5200},
-  MG:{nome:"Minas Gerais",vendas:220,crescimento:7.5,clientes:20000},
-  PA:{nome:"Pará",vendas:80,crescimento:6.2,clientes:6700},
-  PB:{nome:"Paraíba",vendas:55,crescimento:6.0,clientes:3500},
-  PR:{nome:"Paraná",vendas:150,crescimento:6.9,clientes:12000},
-  PE:{nome:"Pernambuco",vendas:100,crescimento:6.7,clientes:8200},
-  PI:{nome:"Piauí",vendas:45,crescimento:5.8,clientes:3000},
-  RJ:{nome:"Rio de Janeiro",vendas:160,crescimento:7.0,clientes:15000},
-  RN:{nome:"Rio Grande do Norte",vendas:50,crescimento:6.1,clientes:3200},
-  RS:{nome:"Rio Grande do Sul",vendas:140,crescimento:6.5,clientes:11000},
-  RO:{nome:"Rondônia",vendas:35,crescimento:5.6,clientes:2100},
-  RR:{nome:"Roraima",vendas:15,crescimento:5.3,clientes:900},
-  SC:{nome:"Santa Catarina",vendas:120,crescimento:6.8,clientes:9000},
-  SP:{nome:"São Paulo",vendas:380,crescimento:8.0,clientes:35000},
-  SE:{nome:"Sergipe",vendas:40,crescimento:5.9,clientes:2600},
-  TO:{nome:"Tocantins",vendas:42,crescimento:6.0,clientes:2800}
+const salesByRegion = {
+  N:  { regiao: "Norte",        vendas:  95, crescimento: 6.2, clientes:  9800 },
+  NE: { regiao: "Nordeste",     vendas: 160, crescimento: 7.4, clientes: 18200 },
+  CO: { regiao: "Centro-Oeste", vendas: 105, crescimento: 6.7, clientes: 11200 },
+  SE: { regiao: "Sudeste",      vendas: 340, crescimento: 7.9, clientes: 36500 },
+  S:  { regiao: "Sul",          vendas: 155, crescimento: 6.1, clientes: 14900 }
+};
+// Mix (base de clientes e receita por segmento)
+const mix = {
+  base: { pequenas: 0.58, medias: 0.28, grandes: 0.14 },
+  receita: { pequenas: 0.42, medias: 0.36, grandes: 0.22 },
+  totalClientes: Object.values(salesByRegion).reduce((s,v)=>s+v.clientes,0)
 };
 
 /* =========================
-   Utilitários / Formatação
+   Utilitários
    ========================= */
 function colorScale(value, min, max){
   if(max === min){ return '#0ea5e9'; }
   const t = (value - min) / (max - min);
-  const h = 205 - 5*t;      // azul claro → azul forte
+  const h = 205 - 5*t;               // azul claro → azul forte
   const s = 85 + 10*t;
-  const l = 78 - 30*t;
+  const l = 80 - 30*t;
   return `hsl(${h}deg, ${s}%, ${l}%)`;
 }
 const fmtBR = new Intl.NumberFormat('pt-BR');
-const fmtMoeda = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const fmtMoeda = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
 
 /* =========================
    KPIs do topo
    ========================= */
 (function initKPIs(){
-  const values = Object.values(salesByUF);
-  const total = values.reduce((s,v)=>s+v.vendas,0);
-  const avgGrowth = values.reduce((s,v)=>s+v.crescimento,0)/values.length;
-  const totalClients = values.reduce((s,v)=>s+v.clientes,0);
-  const ticket = (total*1_000_000)/totalClients;
+  const values = Object.values(salesByRegion);
+  const total = values.reduce((s, v) => s + v.vendas, 0);
+  const avgGrowth = values.reduce((s, v) => s + v.crescimento, 0) / values.length;
+  const totalClients = values.reduce((s, v) => s + v.clientes, 0);
+  const ticket = (total * 1_000_000) / totalClients; // R$ por cliente no trimestre
 
   document.getElementById('kpi-revenue').textContent = fmtMoeda.format(total * 1_000_000);
   document.getElementById('kpi-growth').textContent = `Crescimento médio: ${avgGrowth.toFixed(1)}%`;
@@ -395,106 +450,73 @@ const fmtMoeda = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',
 })();
 
 /* =========================
-   Mapa (Leaflet + Esri + IBGE)
+   Mapa Interativo (Múndi com Brasil por Regiões)
    ========================= */
-const map = L.map('map', {
-  center: [-14.2, -51.9],
-  zoom: 4,
-  worldCopyJump: true
-});
+(function initMap(){
+  const ids = ["N","NE","CO","SE","S"];
+  const values = ids.map(id => salesByRegion[id].vendas);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
 
-// Basemap tipo satélite (estilo Power BI)
-L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 18, attribution: '© Esri — World Imagery' }
-).addTo(map);
-
-// Carregar GeoJSON das UFs via API IBGE (resolução simplificada)
-const IBGE_URL = 'https://servicodados.ibge.gov.br/api/v3/malhas/estados?formato=application/vnd.geo+json&resolucao=5';
-
-fetch(IBGE_URL)
-  .then(r => r.json())
-  .then(geo => {
-    // Calcular min/max para a escala
-    const vendasVals = Object.keys(salesByUF).map(k=>salesByUF[k].vendas);
-    const min = Math.min(...vendasVals);
-    const max = Math.max(...vendasVals);
-
-    // Legenda (gradiente)
-    document.getElementById('legend-bar').style.background =
-      `linear-gradient(90deg, ${colorScale(min,min,max)}, ${colorScale(max,min,max)})`;
-    document.getElementById('min-label').textContent = `R$ ${min} mi`;
-    document.getElementById('max-label').textContent = `R$ ${max} mi`;
-
-    // Listagem TOP 10 por vendas
-    const top = Object.entries(salesByUF)
-      .sort((a,b)=>b[1].vendas - a[1].vendas)
-      .slice(0,10);
-    const side = document.getElementById('side-list');
-    side.innerHTML = top.map(([uf,d])=>`
-      <div class="item">
-        <span>${uf} • ${d.nome}</span>
-        <span><strong>${fmtMoeda.format(d.vendas*1_000_000)}</strong>
-          <span class="pill" style="margin-left:8px">${d.crescimento.toFixed(1)}%</span></span>
-      </div>`).join('');
-
-    // Estilo por UF (choropleth)
-    function styleFeature(f){
-      const sigla = (f.properties && (f.properties.sigla || f.properties.SIGLA || f.properties.uf || f.properties.UF));
-      const d = salesByUF[sigla] || {vendas: min};
-      return {
-        color: '#0f2744',
-        weight: 1.2,
-        fillColor: colorScale(d.vendas, min, max),
-        fillOpacity: 0.70
-      };
-    }
-
-    // Interação
-    function onEachFeature(feature, layer){
-      const sigla = (feature.properties && (feature.properties.sigla || feature.properties.SIGLA || feature.properties.uf || feature.properties.UF));
-      const d = salesByUF[sigla];
-      const nome = (d && d.nome) || (feature.properties && feature.properties.nome) || 'UF';
-      if(d){
-        const html = `
-          <div><strong>${sigla} — ${nome}</strong></div>
-          <div>Vendas no Tri: <strong>${fmtMoeda.format(d.vendas*1_000_000)}</strong></div>
-          <div>Crescimento: <strong>${d.crescimento.toFixed(1)}%</strong></div>
-          <div>Clientes: <strong>${fmtBR.format(d.clientes)}</strong></div>
-        `;
-        layer.bindTooltip(html, {sticky:true, direction:'top', opacity:0.95, offset:[0,-2], className:'map-tooltip'});
-      }
-      layer.on({
-        mouseover: (e)=>{
-          const l = e.target;
-          l.setStyle({weight:2.5, fillOpacity:.9});
-          if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) { l.bringToFront(); }
-        },
-        mouseout: (e)=> geojson.resetStyle(e.target),
-        click: (e)=> map.fitBounds(e.target.getBounds(), {maxZoom: 6})
-      });
-    }
-
-    // Adiciona GeoJSON
-    const geojson = L.geoJSON(geo, { style: styleFeature, onEachFeature }).addTo(map);
-
-    // Ajusta o mapa para mostrar o Brasil inteiro, mantendo contexto mundial
-    map.fitBounds(geojson.getBounds(), { padding:[20,20] });
-  })
-  .catch(err=>{
-    console.warn('Falha ao carregar malhas do IBGE:', err);
+  // Preencher cores por escala
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    el.style.fill = colorScale(salesByRegion[id].vendas, min, max);
   });
+
+  // Legenda dinâmica
+  document.getElementById('legend-bar').style.background =
+    `linear-gradient(90deg, ${colorScale(min,min,max)}, ${colorScale(max,min,max)})`;
+  document.getElementById('min-label').textContent = `R$ ${min} mi`;
+  document.getElementById('max-label').textContent = `R$ ${max} mi`;
+
+  // Lista lateral
+  const side = document.getElementById('side-list');
+  side.innerHTML = ids.map(id=>{
+    const d = salesByRegion[id];
+    return `<div class="item">
+      <span>${d.regiao}</span>
+      <span><strong>${fmtMoeda.format(d.vendas*1_000_000)}</strong> <span class="pill" style="margin-left:8px">${d.crescimento.toFixed(1)}%</span></span>
+    </div>`;
+  }).join('');
+
+  // Tooltip
+  const tooltip = document.getElementById('tooltip');
+  function showTip(e, d){
+    const {clientX:x, clientY:y} = e;
+    tooltip.innerHTML = `
+      <strong>Região:</strong> ${d.regiao}<br>
+      <strong>Vendas no Tri:</strong> ${fmtMoeda.format(d.vendas*1_000_000)}<br>
+      <strong>Crescimento:</strong> ${d.crescimento.toFixed(1)}%
+    `;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+    tooltip.classList.add('show');
+    tooltip.setAttribute('aria-hidden','false');
+  }
+  function hideTip(){
+    tooltip.classList.remove('show');
+    tooltip.setAttribute('aria-hidden','true');
+  }
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    const d = salesByRegion[id];
+    el.addEventListener('mousemove', (e)=> showTip(e, d));
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('focus', (e)=> {
+      const rect = el.getBoundingClientRect();
+      const eventLike = { clientX: rect.left + rect.width/2, clientY: rect.top + 20 };
+      showTip(eventLike, d);
+    });
+    el.addEventListener('blur', hideTip);
+  });
+})();
 
 /* =========================
    Donut (SVG) — Mix de Clientes
    ========================= */
 (function initDonut(){
   const C = 2 * Math.PI * 44; // circunferência
-  const mix = {
-    base: { pequenas: 0.58, medias: 0.28, grandes: 0.14 },
-    receita: { pequenas: 0.42, medias: 0.36, grandes: 0.22 },
-    totalClientes: Object.values(salesByUF).reduce((s,v)=>s+v.clientes,0)
-  };
   const segs = [
     { id: 'seg-peq', p: mix.base.pequenas },
     { id: 'seg-med', p: mix.base.medias },
@@ -508,7 +530,9 @@ fetch(IBGE_URL)
     el.setAttribute('stroke-dashoffset', (-acc).toFixed(2));
     acc += len;
   });
-  document.getElementById('mix-total').textContent = `${fmtBR.format(mix.totalClientes)} clientes`;
+  // Centro e insights
+  document.getElementById('mix-total').textContent =
+    `${fmtBR.format(mix.totalClientes)} clientes`;
   document.getElementById('i-peq').textContent = `${(mix.base.pequenas*100).toFixed(0)}%`;
   document.getElementById('i-grd').textContent = `${(mix.base.grandes*100).toFixed(0)}%`;
   document.getElementById('r-peq').textContent = `${(mix.receita.pequenas*100).toFixed(0)}%`;
@@ -516,7 +540,7 @@ fetch(IBGE_URL)
 })();
 
 /* =========================
-   Fade-in ao rolar
+   Fade-in ao rolar (IntersectionObserver)
    ========================= */
 (function initReveal(){
   const io = new IntersectionObserver((entries)=>{
@@ -527,18 +551,5 @@ fetch(IBGE_URL)
   document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
 })();
 </script>
-
-<!-- Estilo leve para o Tooltip do Leaflet (herda do tema) -->
-<style>
-  .leaflet-tooltip.map-tooltip{
-    background:#061126;
-    border:1px solid #143153;
-    color:#d8eeff;
-    border-radius:10px;
-    box-shadow:0 10px 24px rgba(0,0,0,.35);
-    padding:8px 10px;
-  }
-  .leaflet-tooltip.map-tooltip:before{ display:none }
-</style>
 </body>
 </html>
