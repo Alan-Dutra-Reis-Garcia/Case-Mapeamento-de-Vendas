@@ -11,9 +11,9 @@
     --panel:#0f172a;
     --muted:#94a3b8;
     --text:#e6edf6;
-    --brand:#0ea5e9;        /* azul */
-    --brand-2:#10b981;      /* verde */
-    --accent:#1f2937;       /* cinza escuro */
+    --brand:#0ea5e9;
+    --brand-2:#10b981;
+    --accent:#1f2937;
     --card:#0b1324;
     --stroke:#1e293b;
   }
@@ -85,15 +85,10 @@
     background:linear-gradient(180deg,#0c1627,#0b1526);
     border:1px solid #13304f; border-radius:18px; padding:18px;
   }
-  /* MAP (World + Brazil Regions) */
+  /* MAP */
   .map-wrap{display:grid; grid-template-columns: 1.25fr .75fr; gap:18px}
   .svg-card{position:relative; aspect-ratio: 16/9; border-radius:14px; overflow:hidden; border:1px solid #153658}
   .svg-card svg{width:100%; height:100%; display:block; background:radial-gradient(600px 300px at 70% -10%, rgba(14,165,233,.08), transparent 60%), #08101e}
-  .graticule line{stroke:#0f2744; stroke-width:1; opacity:.25}
-  .continent{fill:#0b1a2f; stroke:#112a47; stroke-width:2}
-  .region{stroke:#0f2744; stroke-width:2.5; cursor:pointer; transition: filter .2s ease}
-  .region:hover{filter:brightness(1.15)}
-  .map-label{font-size:14px; fill:#cfe7ff; opacity:.85; pointer-events:none}
   .legend{display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap}
   .legend .bar{
     width:220px; height:12px; border-radius:999px; border:1px solid #163a5f;
@@ -147,6 +142,13 @@
   /* FADE-IN on scroll */
   .reveal{opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease}
   .reveal.visible{opacity:1; transform:translateY(0)}
+
+  /* D3 map styles */
+  .state{ stroke:#0f2744; stroke-width:.8; cursor:pointer; transition:filter .2s ease, opacity .2s ease }
+  .state:hover{ filter:brightness(1.15) }
+  .state.dim{ opacity:.28 }
+  .graticule-path{ fill:none; stroke:#0f2744; stroke-width:1; opacity:.25 }
+  .world-land{ fill:#0b1a2f; stroke:#112a47; stroke-width:1 }
 </style>
 </head>
 <body>
@@ -175,7 +177,7 @@
     <div class="panel reveal">
       <p style="margin:0">
         <strong>Resumo Executivo:</strong> as vendas no Brasil apresentam assimetria entre regiões. Usamos um
-        <em>mapa-múndi estilizado</em> (à la Power BI) com foco no Brasil — realçando as cinco regiões — para orientar decisões
+        <em>mapa-múndi realista</em> com foco no Brasil — realçando as cinco regiões — para orientar decisões
         comerciais nacionais. O impacto esperado é a <em>priorização de campanhas por região</em>, <em>upsell</em> por perfil e
         aumento de <em>ticket médio</em> via ofertas direcionadas.
       </p>
@@ -200,7 +202,7 @@
     </div>
   </section>
 
-  <!-- SEÇÃO 1: MAPA (Múndi com Brasil por Regiões) -->
+  <!-- SEÇÃO 1: MAPA -->
   <section id="mapa" class="container">
     <h2 class="section-title">Vendas por Região (Mapa Interativo — Mapa-Múndi)</h2>
     <p class="section-sub">Brasil destacado por <strong>regiões</strong> com dados hipotéticos. Passe o mouse para ver detalhes.</p>
@@ -209,82 +211,10 @@
       <div class="svg-card panel reveal" id="map-card" aria-label="Mapa-múndi com Brasil por regiões">
         <!-- Tooltip -->
         <div class="tooltip" id="tooltip" role="dialog" aria-hidden="true"></div>
-
-        <!-- Mapa-múndi estilizado + Brasil segmentado -->
-        <svg viewBox="0 0 1000 520" aria-labelledby="mapTitle mapDesc" role="img">
-          <title id="mapTitle">Mapa-múndi estilizado com Brasil em foco</title>
-          <desc id="mapDesc">Continentes para contexto e Brasil dividido em 5 regiões com cores por volume de vendas.</desc>
-
-          <!-- Graticule (linhas de latitude/longitude para "vibe" Power BI) -->
-          <g class="graticule" opacity=".45">
-            <!-- lat -->
-            <line x1="0" y1="60" x2="1000" y2="60"/>
-            <line x1="0" y1="140" x2="1000" y2="140"/>
-            <line x1="0" y1="220" x2="1000" y2="220"/>
-            <line x1="0" y1="300" x2="1000" y2="300"/>
-            <line x1="0" y1="380" x2="1000" y2="380"/>
-            <line x1="0" y1="460" x2="1000" y2="460"/>
-            <!-- lon -->
-            <line x1="120" y1="0" x2="120" y2="520"/>
-            <line x1="240" y1="0" x2="240" y2="520"/>
-            <line x1="360" y1="0" x2="360" y2="520"/>
-            <line x1="480" y1="0" x2="480" y2="520"/>
-            <line x1="600" y1="0" x2="600" y2="520"/>
-            <line x1="720" y1="0" x2="720" y2="520"/>
-            <line x1="840" y1="0" x2="840" y2="520"/>
-          </g>
-
-          <!-- Continentes (formas simplificadas para contexto visual) -->
-          <g aria-hidden="true">
-            <!-- América do Norte -->
-            <polygon class="continent" points="70,120 220,80 360,100 420,150 360,210 280,200 220,240 160,210 120,240 80,220"/>
-            <!-- América do Sul -->
-            <polygon class="continent" points="320,260 360,260 400,300 380,360 360,420 320,480 300,420 280,360 300,320"/>
-            <!-- Europa -->
-            <polygon class="continent" points="520,110 560,90 600,100 620,120 600,140 560,130"/>
-            <!-- África -->
-            <polygon class="continent" points="560,160 600,180 640,260 620,340 560,320 520,260"/>
-            <!-- Ásia -->
-            <polygon class="continent" points="640,110 720,90 840,120 900,160 880,220 820,200 780,220 720,180 680,180 650,150"/>
-            <!-- Oceania -->
-            <polygon class="continent" points="820,360 880,380 900,420 860,440 820,420"/>
-          </g>
-
-          <!-- Brasil (aprox. dentro da América do Sul) -->
-          <!-- contorno do Brasil para destaque -->
-          <polygon fill="none" stroke="#1a6bb3" stroke-width="3"
-                   points="330,280 360,280 380,300 372,328 362,354 346,368 330,352 332,320" />
-
-          <!-- Regiões do Brasil: Norte, Nordeste, Centro-Oeste, Sudeste, Sul -->
-          <g id="br-regions">
-            <!-- Norte -->
-            <polygon id="N" class="region"
-                     points="330,280 360,280 360,300 342,310 330,300"
-                     tabindex="0" aria-label="Região Norte"></polygon>
-
-            <!-- Nordeste -->
-            <polygon id="NE" class="region"
-                     points="360,280 382,300 372,318 360,300"
-                     tabindex="0" aria-label="Região Nordeste"></polygon>
-
-            <!-- Centro-Oeste -->
-            <polygon id="CO" class="region"
-                     points="342,310 360,300 360,330 346,340 332,330"
-                     tabindex="0" aria-label="Região Centro-Oeste"></polygon>
-
-            <!-- Sudeste -->
-            <polygon id="SE" class="region"
-                     points="360,330 372,330 362,354 346,347"
-                     tabindex="0" aria-label="Região Sudeste"></polygon>
-
-            <!-- Sul -->
-            <polygon id="S" class="region"
-                     points="346,347 362,354 344,368 336,360"
-                     tabindex="0" aria-label="Região Sul"></polygon>
-          </g>
-
-          <!-- Rótulo BR -->
-          <text class="map-label" x="350" y="310">BR</text>
+        <!-- SVG que o D3 vai desenhar -->
+        <svg id="worldmap" viewBox="0 0 1000 520" aria-labelledby="mapTitle mapDesc" role="img">
+          <title id="mapTitle">Mapa-múndi realista com o Brasil por estados</title>
+          <desc id="mapDesc">Mundo em projeção Natural Earth; estados do Brasil com cores por região.</desc>
         </svg>
       </div>
 
@@ -311,9 +241,7 @@
       <div class="panel donut-card reveal">
         <div class="donut-wrap" aria-label="Gráfico de donut — mix de clientes" role="img">
           <svg viewBox="0 0 120 120">
-            <!-- trilha -->
             <circle cx="60" cy="60" r="44" fill="none" stroke="#0c2543" stroke-width="16"></circle>
-            <!-- segmentos -->
             <circle id="seg-peq" cx="60" cy="60" r="44" fill="none" stroke="#0ea5e9" stroke-width="16"
                     stroke-dasharray="0 276.46" transform="rotate(-90 60 60)"></circle>
             <circle id="seg-med" cx="60" cy="60" r="44" fill="none" stroke="#10b981" stroke-width="16"
@@ -401,155 +329,221 @@
     <small>© 2025 — Estudo de Portfólio. Dashboard simulado com dados fictícios.</small>
   </footer>
 
-<script>
-/* =========================
-   Dados Hipotéticos (Nacional)
-   ========================= */
-const salesByRegion = {
-  N:  { regiao: "Norte",        vendas:  95, crescimento: 6.2, clientes:  9800 },
-  NE: { regiao: "Nordeste",     vendas: 160, crescimento: 7.4, clientes: 18200 },
-  CO: { regiao: "Centro-Oeste", vendas: 105, crescimento: 6.7, clientes: 11200 },
-  SE: { regiao: "Sudeste",      vendas: 340, crescimento: 7.9, clientes: 36500 },
-  S:  { regiao: "Sul",          vendas: 155, crescimento: 6.1, clientes: 14900 }
-};
-// Mix (base de clientes e receita por segmento)
-const mix = {
-  base: { pequenas: 0.58, medias: 0.28, grandes: 0.14 },
-  receita: { pequenas: 0.42, medias: 0.36, grandes: 0.22 },
-  totalClientes: Object.values(salesByRegion).reduce((s,v)=>s+v.clientes,0)
-};
+  <!-- Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 
-/* =========================
-   Utilitários
-   ========================= */
-function colorScale(value, min, max){
-  if(max === min){ return '#0ea5e9'; }
-  const t = (value - min) / (max - min);
-  const h = 205 - 5*t;               // azul claro → azul forte
-  const s = 85 + 10*t;
-  const l = 80 - 30*t;
-  return `hsl(${h}deg, ${s}%, ${l}%)`;
-}
-const fmtBR = new Intl.NumberFormat('pt-BR');
-const fmtMoeda = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
+  <!-- App -->
+  <script>
+  /* =========================
+     Dados Hipotéticos (Nacional)
+     ========================= */
+  const salesByRegion = {
+    N:  { regiao: "Norte",        vendas:  95, crescimento: 6.2, clientes:  9800 },
+    NE: { regiao: "Nordeste",     vendas: 160, crescimento: 7.4, clientes: 18200 },
+    CO: { regiao: "Centro-Oeste", vendas: 105, crescimento: 6.7, clientes: 11200 },
+    SE: { regiao: "Sudeste",      vendas: 340, crescimento: 7.9, clientes: 36500 },
+    S:  { regiao: "Sul",          vendas: 155, crescimento: 6.1, clientes: 14900 }
+  };
+  const mix = {
+    base: { pequenas: 0.58, medias: 0.28, grandes: 0.14 },
+    receita: { pequenas: 0.42, medias: 0.36, grandes: 0.22 },
+    totalClientes: Object.values(salesByRegion).reduce((s,v)=>s+v.clientes,0)
+  };
 
-/* =========================
-   KPIs do topo
-   ========================= */
-(function initKPIs(){
-  const values = Object.values(salesByRegion);
-  const total = values.reduce((s, v) => s + v.vendas, 0);
-  const avgGrowth = values.reduce((s, v) => s + v.crescimento, 0) / values.length;
-  const totalClients = values.reduce((s, v) => s + v.clientes, 0);
-  const ticket = (total * 1_000_000) / totalClients; // R$ por cliente no trimestre
-
-  document.getElementById('kpi-revenue').textContent = fmtMoeda.format(total * 1_000_000);
-  document.getElementById('kpi-growth').textContent = `Crescimento médio: ${avgGrowth.toFixed(1)}%`;
-  document.getElementById('kpi-states').textContent = values.length;
-  document.getElementById('kpi-ticket').textContent = fmtMoeda.format(ticket);
-})();
-
-/* =========================
-   Mapa Interativo (Múndi com Brasil por Regiões)
-   ========================= */
-(function initMap(){
-  const ids = ["N","NE","CO","SE","S"];
-  const values = ids.map(id => salesByRegion[id].vendas);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  // Preencher cores por escala
-  ids.forEach(id=>{
-    const el = document.getElementById(id);
-    el.style.fill = colorScale(salesByRegion[id].vendas, min, max);
-  });
-
-  // Legenda dinâmica
-  document.getElementById('legend-bar').style.background =
-    `linear-gradient(90deg, ${colorScale(min,min,max)}, ${colorScale(max,min,max)})`;
-  document.getElementById('min-label').textContent = `R$ ${min} mi`;
-  document.getElementById('max-label').textContent = `R$ ${max} mi`;
-
-  // Lista lateral
-  const side = document.getElementById('side-list');
-  side.innerHTML = ids.map(id=>{
-    const d = salesByRegion[id];
-    return `<div class="item">
-      <span>${d.regiao}</span>
-      <span><strong>${fmtMoeda.format(d.vendas*1_000_000)}</strong> <span class="pill" style="margin-left:8px">${d.crescimento.toFixed(1)}%</span></span>
-    </div>`;
-  }).join('');
-
-  // Tooltip
-  const tooltip = document.getElementById('tooltip');
-  function showTip(e, d){
-    const {clientX:x, clientY:y} = e;
-    tooltip.innerHTML = `
-      <strong>Região:</strong> ${d.regiao}<br>
-      <strong>Vendas no Tri:</strong> ${fmtMoeda.format(d.vendas*1_000_000)}<br>
-      <strong>Crescimento:</strong> ${d.crescimento.toFixed(1)}%
-    `;
-    tooltip.style.left = x + 'px';
-    tooltip.style.top = y + 'px';
-    tooltip.classList.add('show');
-    tooltip.setAttribute('aria-hidden','false');
+  /* =========================
+     Utilitários
+     ========================= */
+  function colorScale(value, min, max){
+    if(max === min){ return '#0ea5e9'; }
+    const t = (value - min) / (max - min);
+    const h = 205 - 5*t;
+    const s = 85 + 10*t;
+    const l = 80 - 30*t;
+    return `hsl(${h}deg, ${s}%, ${l}%)`;
   }
-  function hideTip(){
-    tooltip.classList.remove('show');
-    tooltip.setAttribute('aria-hidden','true');
-  }
-  ids.forEach(id=>{
-    const el = document.getElementById(id);
-    const d = salesByRegion[id];
-    el.addEventListener('mousemove', (e)=> showTip(e, d));
-    el.addEventListener('mouseleave', hideTip);
-    el.addEventListener('focus', (e)=> {
-      const rect = el.getBoundingClientRect();
-      const eventLike = { clientX: rect.left + rect.width/2, clientY: rect.top + 20 };
-      showTip(eventLike, d);
-    });
-    el.addEventListener('blur', hideTip);
-  });
-})();
+  const fmtBR = new Intl.NumberFormat('pt-BR');
+  const fmtMoeda = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
 
-/* =========================
-   Donut (SVG) — Mix de Clientes
-   ========================= */
-(function initDonut(){
-  const C = 2 * Math.PI * 44; // circunferência
-  const segs = [
-    { id: 'seg-peq', p: mix.base.pequenas },
-    { id: 'seg-med', p: mix.base.medias },
-    { id: 'seg-grd', p: mix.base.grandes }
-  ];
-  let acc = 0;
-  segs.forEach(s=>{
-    const len = C * s.p;
-    const el = document.getElementById(s.id);
-    el.setAttribute('stroke-dasharray', `${len.toFixed(2)} ${ (C - len).toFixed(2) }`);
-    el.setAttribute('stroke-dashoffset', (-acc).toFixed(2));
-    acc += len;
-  });
-  // Centro e insights
-  document.getElementById('mix-total').textContent =
-    `${fmtBR.format(mix.totalClientes)} clientes`;
-  document.getElementById('i-peq').textContent = `${(mix.base.pequenas*100).toFixed(0)}%`;
-  document.getElementById('i-grd').textContent = `${(mix.base.grandes*100).toFixed(0)}%`;
-  document.getElementById('r-peq').textContent = `${(mix.receita.pequenas*100).toFixed(0)}%`;
-  document.getElementById('r-grd').textContent = `${(mix.receita.grandes*100).toFixed(0)}%`;
-})();
+  /* =========================
+     KPIs do topo
+     ========================= */
+  (function initKPIs(){
+    const values = Object.values(salesByRegion);
+    const total = values.reduce((s, v) => s + v.vendas, 0);
+    const avgGrowth = values.reduce((s, v) => s + v.crescimento, 0) / values.length;
+    const totalClients = values.reduce((s, v) => s + v.clientes, 0);
+    const ticket = (total * 1_000_000) / totalClients; // R$ por cliente no trimestre
 
-/* =========================
-   Fade-in ao rolar (IntersectionObserver)
-   ========================= */
-(function initReveal(){
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(en=>{
-      if(en.isIntersecting){ en.target.classList.add('visible'); }
+    document.getElementById('kpi-revenue').textContent = fmtMoeda.format(total * 1_000_000);
+    document.getElementById('kpi-growth').textContent = `Crescimento médio: ${avgGrowth.toFixed(1)}%`;
+    document.getElementById('kpi-states').textContent = values.length;
+    document.getElementById('kpi-ticket').textContent = fmtMoeda.format(ticket);
+  })();
+
+  /* =========================
+     Mapa Realista (D3 + GeoJSON)
+     ========================= */
+  (async function initMap(){
+    const ids = ["N","NE","CO","SE","S"];
+    const values = ids.map(id => salesByRegion[id].vendas);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const regionName = { N:"Norte", NE:"Nordeste", CO:"Centro-Oeste", SE:"Sudeste", S:"Sul" };
+
+    // Legenda + lista lateral
+    document.getElementById('legend-bar').style.background =
+      `linear-gradient(90deg, ${colorScale(min,min,max)}, ${colorScale(max,min,max)})`;
+    document.getElementById('min-label').textContent = `R$ ${min} mi`;
+    document.getElementById('max-label').textContent = `R$ ${max} mi`;
+
+    const side = document.getElementById('side-list');
+    side.innerHTML = ids.map(id=>{
+      const d = salesByRegion[id];
+      return `<div class="item">
+        <span>${d.regiao || regionName[id]}</span>
+        <span><strong>${fmtMoeda.format(d.vendas*1_000_000)}</strong>
+        <span class="pill" style="margin-left:8px">${d.crescimento.toFixed(1)}%</span></span>
+      </div>`;
+    }).join('');
+
+    const svg = d3.select("#worldmap");
+    const width = 1000, height = 520;
+    const g = svg.append("g");
+
+    const WORLD_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+    const BR_STATES_URL = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson";
+
+    const worldTopo = await d3.json(WORLD_URL);
+    const countries = topojson.feature(worldTopo, worldTopo.objects.countries);
+
+    const projection = d3.geoNaturalEarth1()
+      .fitExtent([[8,8],[width-8,height-8]], countries);
+    const path = d3.geoPath(projection);
+
+    // Grade e mundo
+    const graticule = d3.geoGraticule10();
+    g.append("path").datum(graticule).attr("class","graticule-path").attr("d", path);
+    g.append("path").datum(countries).attr("class","world-land").attr("d", path);
+
+    // Estados do Brasil
+    const stateToRegion = {
+      "Rondônia":"N","Acre":"N","Amazonas":"N","Roraima":"N","Pará":"N","Amapá":"N","Tocantins":"N",
+      "Maranhão":"NE","Piauí":"NE","Ceará":"NE","Rio Grande do Norte":"NE","Paraíba":"NE","Pernambuco":"NE","Alagoas":"NE","Sergipe":"NE","Bahia":"NE",
+      "Mato Grosso":"CO","Mato Grosso do Sul":"CO","Goiás":"CO","Distrito Federal":"CO",
+      "Minas Gerais":"SE","Espírito Santo":"SE","Rio de Janeiro":"SE","São Paulo":"SE",
+      "Paraná":"S","Santa Catarina":"S","Rio Grande do Sul":"S"
+    };
+
+    const brStates = await d3.json(BR_STATES_URL);
+    brStates.features.forEach(f => {
+      const nm = f.properties.name;
+      f.properties.region = stateToRegion[nm] || null;
+      f.properties.regionLabel = regionName[f.properties.region] || "—";
     });
-  }, { threshold: .12 });
-  document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
-})();
-</script>
+
+    const states = g.selectAll(".state")
+      .data(brStates.features)
+      .join("path")
+      .attr("class","state")
+      .attr("d", path)
+      .attr("fill", d => {
+        const code = d.properties.region;
+        if(!code) return "#0b1a2f";
+        return colorScale(salesByRegion[code].vendas, min, max);
+      })
+      .attr("aria-label", d => `Estado: ${d.properties.name} — Região ${d.properties.regionLabel}`);
+
+    // Tooltip por região
+    const tooltip = document.getElementById('tooltip');
+    function showTip(e, code){
+      const d = salesByRegion[code];
+      if(!d) return;
+      const { clientX:x, clientY:y } = e;
+      tooltip.innerHTML = `
+        <strong>Região:</strong> ${d.regiao || regionName[code]}<br>
+        <strong>Vendas no Tri:</strong> ${fmtMoeda.format(d.vendas*1_000_000)}<br>
+        <strong>Crescimento:</strong> ${d.crescimento.toFixed(1)}%<br>
+        <strong>Clientes:</strong> ${fmtBR.format(d.clientes)}
+      `;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+      tooltip.classList.add('show');
+      tooltip.setAttribute('aria-hidden','false');
+    }
+    function hideTip(){
+      tooltip.classList.remove('show');
+      tooltip.setAttribute('aria-hidden','true');
+    }
+    function highlightRegion(code){
+      states.classed("dim", s => s.properties.region !== code);
+    }
+    function clearHighlight(){
+      states.classed("dim", false);
+    }
+
+    states
+      .on("mousemove", (event, d) => {
+        const code = d.properties.region;
+        if(!code) return;
+        highlightRegion(code);
+        showTip(event, code);
+      })
+      .on("mouseleave", () => {
+        clearHighlight();
+        hideTip();
+      })
+      .attr("tabindex", 0)
+      .on("focus", (event, d) => {
+        const code = d.properties.region;
+        if(!code) return;
+        const rect = event.target.getBoundingClientRect();
+        highlightRegion(code);
+        showTip({clientX: rect.left + rect.width/2, clientY: rect.top + 20}, code);
+      })
+      .on("blur", () => {
+        clearHighlight();
+        hideTip();
+      });
+  })();
+
+  /* =========================
+     Donut (SVG) — Mix de Clientes
+     ========================= */
+  (function initDonut(){
+    const C = 2 * Math.PI * 44;
+    const segs = [
+      { id: 'seg-peq', p: mix.base.pequenas },
+      { id: 'seg-med', p: mix.base.medias },
+      { id: 'seg-grd', p: mix.base.grandes }
+    ];
+    let acc = 0;
+    segs.forEach(s=>{
+      const len = C * s.p;
+      const el = document.getElementById(s.id);
+      el.setAttribute('stroke-dasharray', `${len.toFixed(2)} ${(C - len).toFixed(2)}`);
+      el.setAttribute('stroke-dashoffset', (-acc).toFixed(2));
+      acc += len;
+    });
+    document.getElementById('mix-total').textContent =
+      `${fmtBR.format(mix.totalClientes)} clientes`;
+    document.getElementById('i-peq').textContent = `${(mix.base.pequenas*100).toFixed(0)}%`;
+    document.getElementById('i-grd').textContent = `${(mix.base.grandes*100).toFixed(0)}%`;
+    document.getElementById('r-peq').textContent = `${(mix.receita.pequenas*100).toFixed(0)}%`;
+    document.getElementById('r-grd').textContent = `${(mix.receita.grandes*100).toFixed(0)}%`;
+  })();
+
+  /* =========================
+     Fade-in ao rolar
+     ========================= */
+  (function initReveal(){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{
+        if(en.isIntersecting){ en.target.classList.add('visible'); }
+      });
+    }, { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
+  })();
+  </script>
 </body>
 </html>
